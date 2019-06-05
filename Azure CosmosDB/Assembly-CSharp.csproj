@@ -62,9 +62,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\BasicInfo.cs" />
     <Compile Include="Assets\Scripts\DatabaseConnection.cs" />
+    <Compile Include="Assets\Scripts\Entity.cs" />
+    <Compile Include="Assets\Scripts\GameController.cs" />
     <Compile Include="Assets\Scripts\RandomFloat.cs" />
-    <Compile Include="Assets\Scripts\User.cs" />
+    <Compile Include="Assets\Scripts\Tracker.cs" />
+    <Compile Include="Assets\Scripts\Utils.cs" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>D:/SoloDev/VirtualCove/AzuraCosmosDB/Azure CosmosDB/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
     </Reference>

@@ -1,23 +1,14 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
-using System;
-using UnityEngine;
 using Newtonsoft.Json;
+using UnityEngine;
 
 public class DatabaseConnection : MonoBehaviour
 {
-    private const int INITIAL_SIZE = 50000;
-    private const string ID_ADDITIVE = " Float Index";
-
-    public const string DATABASE_NAME = "VirtualCove";
-    public const string COLLECTION_NAME = "FloatsTest";
-
-
-    public string EndPointUrl = string.Empty;
-    public string PrimaryKey = string.Empty;
-
-
 
 
     private DocumentClient client;
@@ -27,7 +18,7 @@ public class DatabaseConnection : MonoBehaviour
         {
             if(client == null)
             {
-                client = new DocumentClient(new Uri(EndPointUrl), PrimaryKey);
+                client = new DocumentClient(new Uri(BasicInfo.EndPointUrl), BasicInfo.PrimaryKey);
             }
             return client;
         }
@@ -40,156 +31,114 @@ public class DatabaseConnection : MonoBehaviour
         {
             if(documentCollectionLink == null)
             {
-                documentCollectionLink = UriFactory.CreateDocumentCollectionUri(DATABASE_NAME, COLLECTION_NAME);
+                documentCollectionLink = UriFactory.CreateDocumentCollectionUri(BasicInfo.DatabaseName, BasicInfo.CollectionName);
             }
             return documentCollectionLink;
         }
     }
 
 
-    private int numUsers;
-
     // Initialize database
     private void Start()
     {
-
-        // Initialize Connection to client
-        client = new DocumentClient(new Uri(EndPointUrl), PrimaryKey);
-
-        // Create our database
-        client.CreateDatabaseAsync(new Database { Id = DATABASE_NAME });
-
-        // Create our collection for float entities
-        client.CreateDocumentCollectionAsync(
-                    UriFactory.CreateDatabaseUri(DATABASE_NAME),
-                    new DocumentCollection { Id = COLLECTION_NAME },
-                    new RequestOptions { OfferThroughput = 1000 });
-
-        // Create a leases collection for change feed
-        client.CreateDocumentCollectionAsync(
-            UriFactory.CreateDatabaseUri(DATABASE_NAME),
-            new DocumentCollection { Id = "leases" },
-            new RequestOptions { OfferThroughput = 1000 });
-
-
-        // create and keep a reference to the collection link between our collection and database
-        documentCollectionLink = UriFactory.CreateDocumentCollectionUri(DATABASE_NAME, COLLECTION_NAME);
-
-
-        // Initalize the number of users to 0
-        numUsers = 0;
+        InitializeDatabase();
 
     }
 
 
-
-    // Create a new user
-    public void NewUser()
+    public void InitializeDatabase()
     {
-        // If this is the first user created, initialize the database
-        if (numUsers == 0)
+        // Check to see if database exist
+        Database database = Client.CreateDatabaseQuery().Where(db => db.Id == BasicInfo.DatabaseName).AsEnumerable().FirstOrDefault();
+        if (database == null)
         {
-            InitializeDatabase();
+            // Create our database
+            Client.CreateDatabaseAsync(new Database { Id = BasicInfo.DatabaseName }).Wait();
+            database = Client.CreateDatabaseQuery().Where(db => db.Id == BasicInfo.DatabaseName).AsEnumerable().FirstOrDefault();
         }
 
-        // Create the gameobject from the prefab "User"
-        GameObject user = GameObject.Instantiate<GameObject>(Resources.Load<GameObject>("User"));
+        // Create our collection for float entities
+        var collection = Client.CreateDocumentCollectionQuery(database.SelfLink).Where(col => col.Id == BasicInfo.CollectionName).AsEnumerable().FirstOrDefault();
+        if (collection == null)
+        {
+            Client.CreateDocumentCollectionAsync(
+                        UriFactory.CreateDatabaseUri(BasicInfo.DatabaseName),
+                        new DocumentCollection { Id = BasicInfo.CollectionName/*, PartitionKey =*/  },
+                        new RequestOptions { OfferThroughput = 1000 }).Wait();
+        }
 
-        // Set the position so you can see how many users are there
-        user.transform.position = new Vector3((numUsers * 3) - 8, 0, 2);
 
-        //Increment numUsers 
-        numUsers++;
+        // Create a leases collection for change feed
+        var leases = Client.CreateDocumentCollectionQuery(database.SelfLink).Where(col => col.Id == "leases").AsEnumerable().FirstOrDefault();
+        if (leases == null)
+        {
+            Client.CreateDocumentCollectionAsync(
+                UriFactory.CreateDatabaseUri(BasicInfo.DatabaseName),
+                new DocumentCollection { Id = "leases" },
+                new RequestOptions { OfferThroughput = 1000 }).Wait();
+        }
+
+
 
     }
 
     // Initialize database with 50000 element array of floats and store them in database
-    public void InitializeDatabase()
+    public void PopulateDatabase()
     {
-
-        FloatEntity entity;
-
-        // Create 50,000 float entities
-        for (int i = 0; i < INITIAL_SIZE; i++) // index has to start at 1 this time
-        {
-            // Get a random float value
-            float f = RandomFloat.NextFloat();
-
-            entity = new FloatEntity(i, f);
-            CreateItemAsync( entity, documentCollectionLink);
-        }
-
-    }
-
-    public async void WriteRandomFloatToRandomElementInDatabase(System.Random rand)
-    {
-
-        // Get a random number between 0th element and max element
-        int randomIndex = rand.Next(0, INITIAL_SIZE);
-
-        // Change this element to be a random element
-        float randomValue = RandomFloat.NextFloat();
-
-        // Create the object to pass to database 
-        FloatEntity entity = new FloatEntity(randomIndex, randomValue);
+        print("Populating Database...");
 
         try
         {
-            await UpdateItemAsync(entity);
+            // Query the db to see if already populated
+            var query = client.CreateDocumentQuery<Entity.FloatEntity>(DocumentCollectionLink).Count();
+            if(query  == BasicInfo.DatabaseSize)
+            {
+                print("Database already populated!");
+                return;
+            }
+            else if (query != 0)
+            {
+                ResetDatabase();
+                PopulateDatabase();
+            }
+
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            print(e);
+            Debug.Log(e);
         }
 
+
+        StartCoroutine(AddEntities());
+        print("Done!");
     }
 
-
-
-    public Task<ResourceResponse<Document>> CreateItemAsync(FloatEntity item, Uri collectionLink)
+    private IEnumerator AddEntities()
     {
-        return client.CreateDocumentAsync(collectionLink, item);
+        for (int i = 0; i < BasicInfo.DatabaseSize; i++)
+        {
+            // Create a new entity
+            Entity.FloatEntity entity = new Entity.FloatEntity(i, RandomFloat.NextFloat(), BasicInfo.InitialOwner);
 
-    }
+            // Add entity to database
+            Utils.CreateItemAsync(Client, entity, DocumentCollectionLink).Wait();
 
-    public async Task<Document> UpdateItemAsync(FloatEntity item)
-    {
-        return await client.UpsertDocumentAsync(documentCollectionLink, item);
+            // Keep Unity in control of thread so the scene doesn't freeze up
+            yield return new WaitForEndOfFrame();
+
+        }
     }
 
 
     public void ResetDatabase()
     {
         // Delete Collection of floats
-        var collectionLink = UriFactory.CreateDocumentCollectionUri(DATABASE_NAME, COLLECTION_NAME);
-        client.DeleteDocumentCollectionAsync(collectionLink);
+        Client.DeleteDocumentCollectionAsync(DocumentCollectionLink);
 
-        // Recreate it
-        client.CreateDocumentCollectionAsync(
-            UriFactory.CreateDatabaseUri(DATABASE_NAME),
-            new DocumentCollection { Id = COLLECTION_NAME },
-            new RequestOptions { OfferThroughput = 1000 });
+        // Reinitialize it 
+        InitializeDatabase();
 
-        // If there are users make a new database for them to interact with
-        if (numUsers > 0)
-        {
-            // Then initialize it again
-            InitializeDatabase();
-        }
     }
 
-
-    public class FloatEntity : Resource
-    {
-        [JsonProperty(PropertyName ="value")]
-        public string Value { get; set; }
-
-        // Define the Id and Value
-        public FloatEntity(int index, float floatValue)
-        {
-            this.Id = index.ToString() + ID_ADDITIVE;
-            this.Value = floatValue.ToString();
-        }
-    }
 
 }

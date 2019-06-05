@@ -235,8 +235,6 @@ D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\Temp\bin\Debug\com.unity.mul
 D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\Temp\bin\Debug\com.unity.multiplayer-hlapi.Runtime.dll
 D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\Temp\bin\Debug\com.unity.multiplayer-weaver.Editor.dll
 D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\Temp\bin\Debug\Microsoft.Azure.DocumentDB.Core.dll
-D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\Temp\bin\Debug\Microsoft.Azure.Documents.ChangeFeedProcessor.dll
-D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\Temp\bin\Debug\Microsoft.Azure.WebJobs.dll
 D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\Temp\bin\Debug\Microsoft.Win32.Primitives.dll
 D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\Temp\bin\Debug\mscorlib.dll
 D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\Temp\bin\Debug\netstandard.dll
@@ -460,3 +458,4 @@ D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\obj\Debug\Assembly-CSharp.cs
 D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\obj\Debug\Assembly-CSharp.csproj.CopyComplete
 D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\obj\Debug\Assembly-CSharp.dll
 D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\obj\Debug\Assembly-CSharp.pdb
+D:\SoloDev\VirtualCove\AzuraCosmosDB\Azure CosmosDB\Temp\bin\Debug\Microsoft.WindowsAzure.Storage.dll
